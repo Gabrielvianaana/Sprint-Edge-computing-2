@@ -1,0 +1,109 @@
+# 🏟️ Projeto Fantasy - Integração IoT com FIWARE Orion
+
+Este projeto demonstra a integração entre um **dispositivo IoT (ESP32 simulado no Wokwi)** e o **FIWARE Orion Context Broker**, utilizando o protocolo HTTP para consultar informações armazenadas na nuvem.  
+O objetivo é simular a leitura de um cartão (RFID) e exibir os dados da jogadora cadastrada no **Orion** em um **display LCD I2C**, com base no UID do cartão.
+
+---
+
+## 📡 Tecnologias Utilizadas
+
+- **ESP32** (simulado no [Wokwi](https://wokwi.com/))
+- **C++ (Arduino IDE)**
+- **FIWARE Orion Context Broker**
+- **IoT Agent MQTT (porta 4041)**
+- **ArduinoJson** — tratamento de respostas JSON
+- **LiquidCrystal_I2C** — exibição de dados no display
+- **HTTPClient / WiFi.h** — comunicação de rede
+
+---
+
+## ⚙️ Funcionamento do Projeto
+
+1. O ESP32 conecta-se à rede **Wokwi-GUEST**.
+2. O botão “SCAN” simula a leitura de um cartão.
+3. O código envia uma requisição `GET` ao **Orion Context Broker**:
+
+4. O Orion responde com um JSON contendo os dados da jogadora:
+```json
+{
+  "id": "Player_01",
+  "type": "Jogadora",
+  "nome": "Marta",
+  "time": "Selecao",
+  "posicao": "Atacante"
+}
+Jogadora:
+Marta
+
+🧩 Estrutura do Código
+
+setup(): configura LCD, Wi-Fi e botão.
+
+loop(): aguarda o pressionamento do botão SCAN.
+
+consultarFIWARE(uid): realiza a requisição HTTP ao Orion e trata o retorno.
+
+| Etapa | Origem        | Destino              | Porta | Descrição                     |
+| ----- | ------------- | -------------------- | ----- | ----------------------------- |
+| 1     | ESP32 (Wokwi) | Orion Context Broker | 1026  | Consulta os dados da entidade |
+| 2     | Orion         | ESP32                | 1026  | Retorna o JSON da jogadora    |
+| 3     | ESP32         | LCD I2C              | 0x27  | Exibe nome da jogadora        |
+
+
+| Mensagem no LCD | Causa Provável                | Solução                                                       |
+| --------------- | ----------------------------- | ------------------------------------------------------------- |
+| `Timeout/Net`   | IP/porta do Orion inacessível | Use IP **público** e libere porta **1026/tcp** no firewall    |
+| `UID n/cad`     | Entidade não encontrada       | Verifique se o `id`, `type` e `servicePath` batem com o Orion |
+| `Erro JSON`     | Retorno inválido do Orion     | Cheque se o JSON está no formato `keyValues`                  |
+| `Sem WiFi`      | Rede Wokwi não conectada      | Verifique SSID e status do Wi-Fi                              |
+
+
+🌐 Configuração do FIWARE (Postman)
+
+As requisições no Postman devem seguir o mesmo service e servicePath:
+
+Headers:
+
+Fiware-Service: fantasy
+Fiware-ServicePath: /jogadoras
+
+
+Criação de entidade:
+
+POST http://<IP_PUBLICO>:1026/v2/entities
+{
+  "id": "Player_01",
+  "type": "Jogadora",
+  "nome": {"type": "Text", "value": "Marta"},
+  "time": {"type": "Text", "value": "Selecao"},
+  "posicao": {"type": "Text", "value": "Atacante"}
+}
+
+🧰 Componentes Simulados no Wokwi
+Componente	Função
+ESP32	Microcontrolador principal
+LCD 16x2 I2C	Exibição dos dados da jogadora
+Botão	Simula leitura do cartão
+Rede Wi-Fi	Conexão com a internet e Orion
+
+🚀 Como Executar
+
+Abra o projeto no Wokwi
+.
+
+Configure o IP público da sua VM no código:
+
+const char* BROKER_HOST = "SEU_IP_PUBLICO";
+
+
+Inicie o Orion Context Broker e IoT Agent na VM.
+
+Clique em RUN no Wokwi e pressione o botão SCAN.
+
+Veja o nome da jogadora aparecer no LCD!
+
+
+🏁 Licença
+
+Este projeto é distribuído sob a licença MIT.
+Sinta-se livre para usar, modificar e compartilhar.
